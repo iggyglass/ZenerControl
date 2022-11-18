@@ -37,22 +37,27 @@ end
 
 %% Control the noise
 
+% Setup arduino stuff
+pinNumber = 'A0';
 device = arduino();
 adc = addon(device, 'ADC/ADCControl');
+setADCBits(adc, 10);
 
-pinNumber = 'A0';
-
+% Init variables and do the thing
 readings = zeros(1, 512);
+inputs = [0, 10];
 
 while (true)
     % Read Data
-    readings = readADCSamples(device, pinNumber, 1234); % TODO: set wait time to proper value
+    readings = readADCSamples(device, pinNumber, inputs(1));
     [acf, lags] = autocor(readings);
-    maxAcf = max(acf);
+    maxAcf = max(abs(acf));
 
     % Control System
+    inputs = K * maxAcf;
+    setADCBits(adc, inputs(2));
 
     % Log Data
-    fprintf('%g, ', maxAcf, readings(1:end-1));
-    fprintf('%g\n', readings(end))
+    fprintf(fid, '%g, ', maxAcf, readings(1:end-1));
+    fprintf(fid, '%g\n', readings(end));
 end
