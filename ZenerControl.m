@@ -50,7 +50,7 @@ inputs = [0, 10];
 while (true)
     % Read Data
     readings = readADCSamples(device, pinNumber, inputs(1));
-    [acf, lags] = autocor(readings);
+    [acf, lags] = autocorr(readings);
     maxAcf = max(abs(acf));
 
     % Control System
