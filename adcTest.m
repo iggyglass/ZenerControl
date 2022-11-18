@@ -3,11 +3,13 @@ clear; clc;
 a = arduino();
 adc = addon(a, 'ADC/ADCControl');
 
-setADCBits(adc, 6);
+setADCBits(adc, 10);
 
-while (1)
-    reading = readADC(adc, 'A0');
+readings = zeros(1,100);
 
-    display(reading);
-    pause(0.5);
+for i = 1:100
+    readings(i) = readADC(adc, 'A0');
+    pause(0.1);
 end
+
+plot(1:100,readings);

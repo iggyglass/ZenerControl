@@ -4,6 +4,7 @@ classdef ADCLib < matlabshared.addon.LibraryBase
     properties(Access=private, Constant=true)
         READ_ADC     = hex2dec('01')
         SET_ADC_BITS = hex2dec('02')
+        READ_SAMPLES = hex2dec('03')
     end
 
     % Protected properties for setup
@@ -44,6 +45,23 @@ classdef ADCLib < matlabshared.addon.LibraryBase
 
             try
                 sendCommand(obj, obj.LibraryName, cmdID, uint8(n));
+            catch e
+                throwAsCaller(e);
+            end
+        end
+
+        % Read 512 ADC samples from the ADC with given delay in
+        % microseconds
+        function data = readADCSamples(obj, pin, waitTime)
+            cmdID = obj.READ_SAMPLES;
+
+            try
+                terminal = getTerminalsFromPins(obj.Parent, pin);
+                dataIn = [terminal, uint16(waitTime)];
+                timeout = waitTime * 512 * 2;
+
+                data = sendCommand(obj, obj.LibraryName, cmdID, dataIn, timeout);
+                data = typecast(data, 'uint16');
             catch e
                 throwAsCaller(e);
             end
