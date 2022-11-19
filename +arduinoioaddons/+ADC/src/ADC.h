@@ -1,9 +1,12 @@
+#pragma once
+
 #include "LibraryBase.h"
 
 #define SAMPLE_COUNT 512
 #define NUM_ADC_BITS 10
 
 const char MSG_UNKNOWN_CMD[] PROGMEM = "ADC/ADCControl[%d]->Unknown Command\n";
+const char MSG_TOO_FEW_PARAMS[] PROGMEM = "ADC/ADCControl[%d]->Not Enough Arguments\n";
 
 class ADCLib : public LibraryBase
 {
@@ -37,6 +40,12 @@ public:
         {
             case CmdID::READ_ADC:
             {
+                if (payloadSize < 1)
+                {
+                    debugPrint(MSG_TOO_FEW_PARAMS);
+                    break;
+                }
+
                 uint8_t pin = dataIn[0];
                 uint16_t val = readAdcValue(pin);
 
@@ -46,6 +55,12 @@ public:
             }
             case CmdID::SET_ADC_BITS:
             {
+                if (payloadSize < 1)
+                {
+                    debugPrint(MSG_TOO_FEW_PARAMS);
+                    break;
+                }
+
                 uint8_t bits = dataIn[0];
 
                 this->adcShift = NUM_ADC_BITS >= bits ? NUM_ADC_BITS - bits : NUM_ADC_BITS;
@@ -55,17 +70,23 @@ public:
             }
             case CmdID::READ_SAMPLES:
             {
+                if (payloadSize < 3)
+                {
+                    debugPrint(MSG_TOO_FEW_PARAMS);
+                    break;
+                }
+
                 uint8_t pin = dataIn[0];
                 uint16_t waitTime = *((uint16_t*)&dataIn[1]);
 
                 for (int i = 0; i < SAMPLE_COUNT; i++)
                 {
-                    samples[i] = readAdcValue(pin);
+                    this->samples[i] = readAdcValue(pin);
                     delayMicroseconds(waitTime);
                 }
 
                 // TODO: send wait time in response to check endianness
-                sendResponseMsg(cmdID, (uint8_t*)(&samples[0]), SAMPLE_COUNT * 2);
+                sendResponseMsg(cmdID, (uint8_t*)(&this->samples[0]), SAMPLE_COUNT * 2);
                 break;
             }
             default:

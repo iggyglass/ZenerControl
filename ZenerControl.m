@@ -1,15 +1,18 @@
-% Script to control sampled autocorrelation of Zener noise on an Arduino
+% Script to control sample autocorrelation of Zener noise on an Arduino
 % Iggy Glassman, Nov. '22
 clear; clc; close all;
 
 %% Approximation Constants
-resistance = 1000;   % Resistance of pulldown resistor used
-capacitance = 1e-7;  % Junction capacitance of Zener diode
-numBits = 10;        % Total number of ADC bits
+resistance = 1e3;      % Resistance of pulldown resistor used in Ohms
+capacitance = 50e-12;  % Junction capacitance of Zener diode in Farad
+numBits = 10;          % Maximum ADC resolution in bits
 
 %% LQR Heuristics 
-stateCosts = 1; % TODO: find a good number
-inputCosts = [2;3]; % TODO: same lol
+inputPeriodIndex = 1;
+inputResolutionIndex = 2;
+
+stateCosts = 20; % TODO: find a good number
+inputCosts = [15; 1000000]; % TODO: same lol
 
 %% LQR Setup
 A = 0; % TODO: make sure system matrices are correct
@@ -49,13 +52,13 @@ inputs = [0, 10];
 
 while (true)
     % Read Data
-    readings = readADCSamples(device, pinNumber, inputs(1));
+    readings = readADCSamples(device, pinNumber, inputs(inputPeriodIndex));
     [acf, lags] = autocorr(readings);
     maxAcf = max(abs(acf));
 
     % Control System
-    inputs = K * maxAcf;
-    setADCBits(adc, inputs(2));
+    inputs = maxAcf * -K;
+    setADCBits(adc, inputs(inputResolutionIndex));
 
     % Log Data
     fprintf(fid, '%g, ', maxAcf, readings(1:end-1));
