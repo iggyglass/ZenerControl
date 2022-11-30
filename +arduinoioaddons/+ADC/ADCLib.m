@@ -56,12 +56,13 @@ classdef ADCLib < matlabshared.addon.LibraryBase
             cmdID = obj.READ_SAMPLES;
 
             try
+                waitTime = waitTime * 1e6; % Convert from s to us
                 terminal = getTerminalsFromPins(obj.Parent, pin);
                 dataIn = [terminal, uint16(waitTime)];
-                timeout = waitTime * 512 * 2;
+                timeout = max(5, waitTime * 512 * 2);
 
                 data = sendCommand(obj, obj.LibraryName, cmdID, dataIn, timeout);
-                data = typecast(data, 'uint16');
+                data = typecast(uint8(data), 'uint16');
             catch e
                 throwAsCaller(e);
             end

@@ -6,6 +6,7 @@ adc = addon(a, 'ADC/ADCControl');
 
 setADCBits(adc, 10);
 
-data = readADCSamples(adc, 'A0', 0.01);
-fprintf('%g, ', data);
-fprintf('\n');
+data = readADCSamples(adc, 'A0', 0);
+times = [1:512]';
+
+plot(times, data);

@@ -24,6 +24,7 @@ private:
 private:
     inline uint16_t readAdcValue(uint8_t pin)
     {
+        // RSH to make readings over a less precise scale
         return analogRead(pin) >> this->adcShift;
     }
 
@@ -40,29 +41,21 @@ public:
         {
             case CmdID::READ_ADC:
             {
-                if (payloadSize < 1)
-                {
-                    debugPrint(MSG_TOO_FEW_PARAMS);
-                    break;
-                }
-
                 uint8_t pin = dataIn[0];
                 uint16_t val = readAdcValue(pin);
 
-                // Who needs standards compliance anyways
+                // Not standards compliant, but AVR-GCC will compile it and
+                // it will work as x86-64 (the arch of our host computer)
+                // has the same endianness as AVR (little)
                 sendResponseMsg(cmdID, (uint8_t*)(&val), 2);
                 break;
             }
             case CmdID::SET_ADC_BITS:
             {
-                if (payloadSize < 1)
-                {
-                    debugPrint(MSG_TOO_FEW_PARAMS);
-                    break;
-                }
-
                 uint8_t bits = dataIn[0];
 
+                // Set shift to 10 (max sample bits) minus the passed in
+                // number of bits
                 this->adcShift = NUM_ADC_BITS >= bits ? NUM_ADC_BITS - bits : NUM_ADC_BITS;
                 sendResponseMsg(cmdID, nullptr, 0);
 
@@ -70,22 +63,19 @@ public:
             }
             case CmdID::READ_SAMPLES:
             {
-                if (payloadSize < 3)
-                {
-                    debugPrint(MSG_TOO_FEW_PARAMS);
-                    break;
-                }
-
                 uint8_t pin = dataIn[0];
                 uint16_t waitTime = *((uint16_t*)&dataIn[1]);
-
+                
+                // Read samples and cache them in large array -- sending
+                // data back to MATLAB through a serial port takes A LOT of
+                // time relatively speaking, so do a bunch of readings and
+                // send them all at once
                 for (int i = 0; i < SAMPLE_COUNT; i++)
                 {
                     this->samples[i] = readAdcValue(pin);
                     delayMicroseconds(waitTime);
                 }
 
-                // TODO: send wait time in response to check endianness
                 sendResponseMsg(cmdID, (uint8_t*)(&this->samples[0]), SAMPLE_COUNT * 2);
                 break;
             }
